@@ -1,0 +1,19 @@
+<ion-view title="Sign-In">
+  <ion-content>
+    <div class="list">
+      <label class="item item-input">
+        <span class="input-label">Device ID</span>
+        <input type="text" ng-model="device.id">
+      </label>
+      <label class="item item-input">
+        <span class="input-label">Serial Number</span>
+        <input type="text" ng-model="device.serialnumber">
+      </label>
+    </div>
+    <div class="padding">
+      <button class="button button-block button-positive" ng-click="signIn(device)">
+              Sign-In
+      </button>
+    </div>
+  </ion-content>
+</ion-view>
