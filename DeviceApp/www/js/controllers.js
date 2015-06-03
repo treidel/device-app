@@ -42,20 +42,65 @@ angular.module('starter.controllers', [])
 })
 
 .controller('DashCtrl', function($scope, Device) {
-  // fetch the data for the form
-  $scope.usage = Device.hourlyusage();
-
   // setup the rickshaw data
-  $scope.options1 = { renderer: 'area' };
-  $scope.series1 = [{
-    name: 'Series 1',
-    color: 'steelblue',
-    data: [{x: 0, y: 23}, {x: 1, y: 15}, {x: 2, y: 79}, {x: 3, y: 31}, {x: 4, y: 60}]
-  }, {
-    name: 'Series 2',
-    color: 'lightblue',
-    data: [{x: 0, y: 30}, {x: 1, y: 20}, {x: 2, y: 64}, {x: 3, y: 50}, {x: 4, y: 15}]
-  }];
+  $scope.options1 = { renderer: 'line' };
+  $scope.series1 = [];
+  $scope.features1 = {
+    palette: 'colorwheel',
+    xAxis: {
+      timeUnit: true
+    },
+    yAxis: {
+      tickFormat: 'formatKMBT'
+    },
+    directive: {
+      watchAllSeries: true
+    }
+  };
+
+  // fetch device info
+  Device.device().then(function(response) {
+    console.log('found device', response);
+    // store the device
+    $scope.device = response.device;
+    // setup a lookup table to map circuit names to a constant index
+    var lookup = {};
+    // initialize the rickshaw series and lookup table
+    for (var circuit = 0; circuit < $scope.device.circuits.length; circuit++) {
+       $scope.series1[circuit] = { 
+          name : $scope.device.circuits[circuit].name,
+          color: 'steelblue',
+          data : []  
+       };
+       lookup[$scope.device.circuits[circuit].name] = circuit;
+    }
+    // query the usage
+    Device.hourlyusage().then(function(data) {
+      console.log('received usage', data);
+      // iterate through each record
+      for (var j = 0; j < data.length; j++) {
+        // parse the date
+        var timestamp = Date.parse(data[j].record.date) / 1000;
+        console.log('timestamp', timestamp);
+        // get the measurements
+        measurements = data[j].record.measurements;
+        // fill in an entry for each circuit
+        for (var i = 0; i < measurements.length; i++) {
+          // map the circuit 
+          var index = lookup[measurements[i].circuit];
+          // extract the value
+          var value = measurements[i]["power-in-kwh"];
+          console.log('populating data', index, j, timestamp, value);
+          // fill in the data
+          $scope.series1[index].data[j] = { 
+            x: timestamp, 
+            y: value
+          };
+        }
+      }
+      console.log('finished populating chart');
+    });
+  });
 })
 
 .controller('SettingsCtrl', function($scope) {

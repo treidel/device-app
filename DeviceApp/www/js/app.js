@@ -23,7 +23,7 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', '
 
 .config(function($stateProvider, $urlRouterProvider, RestangularProvider) {
 
-  RestangularProvider.setBaseUrl('http://192.168.0.146:8080/app');
+  RestangularProvider.setBaseUrl('http://demo8454233.mockable.io/app');
 
   // Ionic uses AngularUI Router which uses the concept of states
   // Learn more here: https://github.com/angular-ui/ui-router
