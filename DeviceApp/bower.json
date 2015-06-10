@@ -1,8 +1,11 @@
 {
   "name": "DeviceApp",
   "private": "true",
+  "dependencies" : {
+    "restangular": "1.4.0",
+    "stomp-websocket":"v2.3.0"
+  },
   "devDependencies": {
-    "ionic": "driftyco/ionic-bower",
-    "restangular": "1.4.0"
+    "ionic": "driftyco/ionic-bower"
   }
 }

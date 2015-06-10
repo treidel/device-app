@@ -5,7 +5,7 @@
 // the 2nd parameter is an array of 'requires'
 // 'starter.services' is found in services.js
 // 'starter.controllers' is found in controllers.js
-angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', 'restangular', 'angular-rickshaw'])
+var app = angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', 'restangular', 'angular-rickshaw'])
 
 .run(function($ionicPlatform) {
   $ionicPlatform.ready(function() {
@@ -23,7 +23,7 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', '
 
 .config(function($stateProvider, $urlRouterProvider, RestangularProvider) {
 
-  RestangularProvider.setBaseUrl('http://demo8454233.mockable.io/app');
+  RestangularProvider.setBaseUrl('rest-app-98608388.us-east-1.elb.amazonaws.com');
 
   // Ionic uses AngularUI Router which uses the concept of states
   // Learn more here: https://github.com/angular-ui/ui-router
@@ -71,3 +71,6 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', '
 
 });
 
+// configure application values
+//app.value('websocketUrl', 'http://websocket-app-1163830576.us-east-1.elb.amazonaws.com/stomp');
+app.value('websocketUrl', 'ws://192.168.56.102:8004/stomp');

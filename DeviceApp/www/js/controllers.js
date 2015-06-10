@@ -1,6 +1,6 @@
 angular.module('starter.controllers', [])
 
-.controller('LoginCtrl', function($scope, $state, $ionicPopup, $ionicLoading, Credentials) {
+.controller('LoginCtrl', function($scope, $state, $ionicPopup, $ionicLoading, Credentials, Connection) {
   // fetch the data for the form
   $scope.device = Credentials.get();
 
@@ -20,8 +20,10 @@ angular.module('starter.controllers', [])
     $ionicLoading.show({
       tempate: 'Loading'
     });
-    // try to authenticate
-    Credentials.login(device).then(function() {
+    // store credentials
+    Credentials.set(device);
+    // try to connect
+    Connection.connect().then(function() {
       // hide the loading dialog
       $ionicLoading.hide();
       // authentication success - continue to tabs

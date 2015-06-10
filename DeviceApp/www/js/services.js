@@ -3,39 +3,20 @@ angular.module('starter.services', [])
 /**
  * A service to manage login credentials
  */
-.factory('Credentials', function(Restangular, $q, $http, $rootScope) {
+.factory('Credentials', function(Restangular, $q, $rootScope) {
 
   return {
-    // method to test login credentials
-    login: function(credential) {
-      // create a deferred response
-      var defer = $q.defer();
-
-      // configure authentication
-      this.configure(credential);
-
-      // do a REST call
-      Restangular.one('device').get().then(function(response) {
-        console.log('authenticated', credential, response);
-        // success, store credentials in local storage
-        window.localStorage['device'] = JSON.stringify(credential);
-        // send back success
-        defer.resolve();
-      }, function() {
-        console.log('error authenticating', credential);
-        // clear existing credentials
-        window.localStorage['device'] = undefined;
-        // tell them it failed
-        defer.reject();
-      });
-      // return the promise
-      return defer.promise
+    // method to clear credentials
+    clear: function() {
+      console.log('clearing credentials');
+      window.localStorage['device'] = undefined;
     },
 
-    // method to configure HTTP authentication
-    configure: function (credential) {
-      var encoded = Base64.encode(credential.id + ':' + credential.serialnumber);
-      $http.defaults.headers.common.Authorization = 'Basic ' + encoded;
+    // method to store credentials
+    set: function(credential) {
+      console.log('storing credentials', credential);
+      // store credentials in local storage
+      window.localStorage['device'] = JSON.stringify(credential);
     },
 
     // method to return login credentials
@@ -57,6 +38,60 @@ angular.module('starter.services', [])
 })
 
 /**
+ * A service to manage connections to the central service
+ */
+.factory('Connection', function($q, $rootScope, $http, Credentials, websocketUrl) {
+
+  // module variable that holds the client 
+  var client = undefined;
+
+  return {
+    // method to initiate a connection to the central server, returns a deferred response
+    connect: function() {
+      console.log('connecting to ' + websocketUrl);
+      // create a deferred response
+      var defer = $q.defer();
+      // setup HTTP authentication
+      var credential = Credentials.get();
+      // create the connection url
+      var connectUrl = websocketUrl + '?device=' + credential.id + '&serialnumber=' + credential.serialnumber;
+      try {
+        // create the client
+        client = Stomp.client(connectUrl);
+        // connect
+        client.connect({}, function() {
+          console.log('connected');
+          // send back success
+          defer.resolve();
+        }, function(error) {
+          console.log('error connecting', error);
+          // clear the client
+          client = undefined;
+          // tell them it failed
+          defer.reject();
+        });
+      } catch (err) {
+        console.log('websocket connection failed', error);
+        // fail the promise
+        defer.reject('unable to connect', error); 
+      }
+      // return the promise
+      return defer.promise;
+
+    },
+
+    // method to store credentials
+    disconnect: function () {
+      console.log('disconnecting'); 
+      // trigger a disconnect
+      client.disconnect();
+      // clear the clinet
+      client = undefined; 
+    },
+  };
+})
+
+/**
  * A service to query device information
  */
 .factory('Device', function(Restangular, Credentials, $q, $http) {
@@ -65,13 +100,13 @@ angular.module('starter.services', [])
     device: function() {
       // create a deferred response
       var defer = $q.defer();
-      // get the credential 
+      // setup HTTP authentication
       var credential = Credentials.get();
-      // configure the authentication
-      Credentials.configure(credential);
+      var encoded = Base64.encode(credential.id + ':' + credential.serialnumber);
+      $http.defaults.headers.common.Authorization = 'Basic ' + encoded;
       // do a REST call  
       Restangular.one('device').get().then(function(response) {
-        console.log('queried device', credential, response);
+        console.log('queried device', response);
         // send back success
         defer.resolve(response);
       }, function() {
@@ -87,10 +122,10 @@ angular.module('starter.services', [])
     hourlyusage: function() {
       // create a deferred response
       var defer = $q.defer();
-      // get the credential 
+      // setup HTTP authentication
       var credential = Credentials.get();
-      // configure the authentication
-      Credentials.configure(credential);
+      var encoded = Base64.encode(credential.id + ':' + credential.serialnumber);
+      $http.defaults.headers.common.Authorization = 'Basic ' + encoded;
       // do a REST call
       Restangular.all('usage/hourly').getList().then(function(response) {
         console.log('queried hourly usage', response);
