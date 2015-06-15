@@ -1,9 +1,20 @@
 <ion-view title="Dashboard">
   <ion-content class="padding">
-    <rickshaw
-        rickshaw-options="options1"
-        rickshaw-features="features1"
-        rickshaw-series="series1">
-    </rickshaw>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-4">
+          <pie-chart data="dataDaily" options="optionsDaily"></pie-chart>
+        </div> 
+        <div class="col-md-4">
+          <rickshaw rickshaw-options="optionsHourly" rickshaw-features="featuresHourly" rickshaw-series="seriesHourly"></rickshaw>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-4">
+          <h4>Live Data</h4>
+           <rickshaw rickshaw-options="optionsLive" rickshaw-features="featuresLive" rickshaw-series="seriesLive"></rickshaw> 
+	</div>
+      </div>
+    </div>
   </ion-content>
 </ion-view>

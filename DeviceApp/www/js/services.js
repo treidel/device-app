@@ -3,7 +3,7 @@ angular.module('starter.services', [])
 /**
  * A service to manage login credentials
  */
-.factory('Credentials', function(Restangular, $q, $rootScope) {
+.factory('Credentials', function($q, $rootScope) {
 
   return {
     // method to clear credentials
@@ -45,12 +45,23 @@ angular.module('starter.services', [])
   // module variable that holds the client 
   var client = undefined;
 
+  // module variable that holds the subscription state
+  var subscription = undefined;
+
   return {
     // method to initiate a connection to the central server, returns a deferred response
     connect: function() {
-      console.log('connecting to ' + websocketUrl);
       // create a deferred response
       var defer = $q.defer();
+      // if we're already connected just return
+      if (client) {
+         console.log('already connected');
+         // we're already good
+         defer.resolve();
+         // return the promise
+         return defer.promise();
+      }
+      console.log('connecting to ' + websocketUrl);
       // setup HTTP authentication
       var credential = Credentials.get();
       // create the connection url
@@ -68,7 +79,7 @@ angular.module('starter.services', [])
           // clear the client
           client = undefined;
           // tell them it failed
-          defer.reject();
+          defer.reject('stomp connection failed', error);
         });
       } catch (err) {
         console.log('websocket connection failed', error);
@@ -77,10 +88,9 @@ angular.module('starter.services', [])
       }
       // return the promise
       return defer.promise;
-
     },
 
-    // method to store credentials
+    // method to disconnect from remote server
     disconnect: function () {
       console.log('disconnecting'); 
       // trigger a disconnect
@@ -88,13 +98,34 @@ angular.module('starter.services', [])
       // clear the clinet
       client = undefined; 
     },
+    
+    // method to subscribe to notifications
+    subscribe: function(handler) {
+      console.log('subscribing to notifications');
+      // subscribe to be notified 
+      subscription = client.subscribe('/topic/device/notifications', function(notification) {
+        console.log('notification', notification);
+        // invoke the notification handler
+        handler.call(notification);
+      });
+    }, 
+
+    // method to unsubscribe from notifications
+    unsubscribe: function() {
+      console.log('unsubscribing from notifications');
+      subscription.unsubscribe();
+      subscription = undefined;
+    }
   };
 })
 
 /**
  * A service to query device information
  */
-.factory('Device', function(Restangular, Credentials, $q, $http) {
+.factory('Device', function(Restangular, Credentials, restUrl, $q, $http) {
+ 
+  // set the URL for the REST library 
+  Restangular.setBaseUrl(restUrl);
 
   return {
     device: function() {
@@ -108,9 +139,9 @@ angular.module('starter.services', [])
       Restangular.one('device').get().then(function(response) {
         console.log('queried device', response);
         // send back success
-        defer.resolve(response);
-      }, function() {
-        console.log('error querying device', credential);
+        defer.resolve(response.device);
+      }, function(response) {
+        console.log('error querying device', response);
         // tell them it failed
         defer.reject();
       });
@@ -131,8 +162,8 @@ angular.module('starter.services', [])
         console.log('queried hourly usage', response);
         // send back success
         defer.resolve(response);
-      }, function() {
-        console.log('error querying hourly usage', device);
+      }, function(response) {
+        console.log('error querying hourly usage', response);
         // tell them it failed
         defer.reject();
       });

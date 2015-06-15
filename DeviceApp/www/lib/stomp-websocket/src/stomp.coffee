@@ -36,11 +36,23 @@ class Frame
   # suitable to be sent to the server
   toString: ->
     lines = [@command]
+    skipContentLength = if (@headers['content-length'] == false) then true else false
+    delete @headers['content-length'] if skipContentLength
+
     for own name, value of @headers
       lines.push("#{name}:#{value}")
-    lines.push("content-length:#{('' + @body).length}") if @body
+    if @body && !skipContentLength
+      lines.push("content-length:#{Frame.sizeOfUTF8(@body)}")
     lines.push(Byte.LF + @body)
     return lines.join(Byte.LF)
+
+  # Compute the size of a UTF-8 string by counting its number of bytes
+  # (and not the number of characters composing the string)
+  @sizeOfUTF8: (s)->
+    if s
+      encodeURI(s).match(/%..|./g).length
+    else
+      0
 
   # Unmarshall a single STOMP frame from a `data` string
   unmarshallSingle= (data) ->
@@ -76,6 +88,8 @@ class Frame
 
   # Split the data before unmarshalling every single STOMP frame.
   # Web socket servers can send multiple frames in a single websocket message.
+  # If the message size exceeds the websocket message size, then a single
+  # frame can be fragmented across multiple messages.
   #
   # `datas` is a string.
   #
@@ -83,8 +97,25 @@ class Frame
   @unmarshall: (datas) ->
     # Ugly list comprehension to split and unmarshall *multiple STOMP frames*
     # contained in a *single WebSocket frame*.
-    # The data are splitted when a NULL byte (follwode by zero or many LF bytes) is found
-    return (unmarshallSingle(data) for data in datas.split(///#{Byte.NULL}#{Byte.LF}*///) when data?.length > 0)
+    # The data is split when a NULL byte (followed by zero or many LF bytes) is
+    # found
+    frames = datas.split(///#{Byte.NULL}#{Byte.LF}*///)
+
+    r =
+      frames:  []
+      partial: ''
+    r.frames = (unmarshallSingle(frame) for frame in frames[0..-2])
+
+    # If this contains a final full message or just a acknowledgement of a PING
+    # without any other content, process this frame, otherwise return the
+    # contents of the buffer to the caller.
+    last_frame = frames[-1..][0]
+
+    if last_frame is Byte.LF or (last_frame.search ///#{Byte.NULL}#{Byte.LF}*$///) isnt -1
+      r.frames.push(unmarshallSingle(last_frame))
+    else
+      r.partial = last_frame
+    return r
 
   # Marshall a Stomp frame
   @marshall: (command, headers, body) ->
@@ -115,6 +146,7 @@ class Client
     @maxWebSocketFrameSize = 16*1024
     # subscription callbacks indexed by subscriber's ID
     @subscriptions = {}
+    @partialData = ''
 
   # ### Debugging
   #
@@ -134,7 +166,7 @@ class Client
       
   # Utility method to get the current timestamp (Date.now is not defined in IE8)
   now= ->
-    Date.now || new Date().valueOf
+    if Date.now then Date.now() else new Date().valueOf
   
   # Base method to transmit any stomp frame
   _transmit: (command, headers, body) ->
@@ -230,7 +262,11 @@ class Client
         return
       @debug? "<<< #{data}"
       # Handle STOMP frames received from the server
-      for frame in Frame.unmarshall(data)
+      # The unmarshall function returns the frames parsed and any remaining
+      # data from partial frames.
+      unmarshalledData = Frame.unmarshall(@partialData + data)
+      @partialData = unmarshalledData.partial
+      for frame in unmarshalledData.frames
         switch frame.command
           # [CONNECTED Frame](http://stomp.github.com/stomp-specification-1.1.html#CONNECTED_Frame)
           when "CONNECTED"
@@ -290,8 +326,8 @@ class Client
       @_transmit "CONNECT", headers
 
   # [DISCONNECT Frame](http://stomp.github.com/stomp-specification-1.1.html#DISCONNECT)
-  disconnect: (disconnectCallback) ->
-    @_transmit "DISCONNECT"
+  disconnect: (disconnectCallback, headers={}) ->
+    @_transmit "DISCONNECT", headers
     # Discard the onclose callback to avoid calling the errorCallback when
     # the client is properly disconnected.
     @ws.onclose = null
@@ -474,6 +510,10 @@ Stomp =
 
 # # `Stomp` object exportation
 
+# export as CommonJS module
+if exports?
+  exports.Stomp = Stomp
+
 # export in the Web Browser
 if window?
   # in the Web browser, rely on `window.setInterval` to handle heart-beats
@@ -482,9 +522,6 @@ if window?
   Stomp.clearInterval= (id) ->
     window.clearInterval id
   window.Stomp = Stomp
-# or as module (for tests only)
-else if exports?
-  exports.Stomp = Stomp
 # or in the current object (e.g. a WebWorker)
-else
+else if !exports
   self.Stomp = Stomp

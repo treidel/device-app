@@ -1,9 +1,13 @@
 {
   "name": "DeviceApp",
   "private": "true",
-  "dependencies" : {
-    "restangular": "1.4.0",
-    "stomp-websocket":"v2.3.0"
+  "dependencies": {
+    "bootstrap": "twbs/bootstrap",
+    "restangular": "mgonto/restangular",
+    "stomp-websocket": "jmesnil/stomp-websocket",
+    "rickshaw": "shutterstock/rickshaw",
+    "angular-rickshaw": "ngyewch/angular-rickshaw",
+    "n3-charts.pie-chart": "n3-charts/pie-chart"
   },
   "devDependencies": {
     "ionic": "driftyco/ionic-bower"

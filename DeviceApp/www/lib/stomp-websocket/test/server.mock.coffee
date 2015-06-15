@@ -7,7 +7,7 @@ class StompServerMock extends WebSocketMock
   # WebSocketMock handlers
   
   handle_send: (msg) =>
-    @stomp_dispatch(Stomp.Frame.unmarshall(msg)[0])
+    @stomp_dispatch(Stomp.Frame.unmarshall(msg).frames[0])
   
   handle_close: =>
     @_shutdown()
@@ -67,7 +67,7 @@ class StompServerMock extends WebSocketMock
     if frame.headers.transaction
       @transactions[frame.headers.transaction].push(frame)
     else
-      @messages.push(frame.body)
+      @messages.push(frame)
 
   stomp_handle_subscribe: (frame) ->
     sub_id = frame.headers.id or Math.random()

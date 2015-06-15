@@ -40,7 +40,8 @@ describe "Stomp", ->
       client.send("/queue/test", {}, message)
     )
     waitsFor -> message
-    runs -> expect(client.ws.messages).toContain(message)
+    runs -> expect(client.ws.messages.pop().toString()).toContain(message)
+
   
   it "lets you unsubscribe from a destination", ->
     client = Stomp.client("ws://mocked/stomp/server")
