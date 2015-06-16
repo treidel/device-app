@@ -3,7 +3,7 @@ angular.module('starter.services', [])
 /**
  * A service to manage login credentials
  */
-.factory('Credentials', function($q, $rootScope) {
+.factory('CredentialsService', function($q) {
 
   return {
     // method to clear credentials
@@ -40,7 +40,7 @@ angular.module('starter.services', [])
 /**
  * A service to manage connections to the central service
  */
-.factory('Connection', function($q, $rootScope, $http, Credentials, websocketUrl) {
+.factory('ConnectionService', function($q, $http, CredentialsService, websocketUrl) {
 
   // module variable that holds the client 
   var client = undefined;
@@ -49,6 +49,11 @@ angular.module('starter.services', [])
   var subscription = undefined;
 
   return {
+    // method to indicate if connected
+    isConnected: function() {
+      return (client != undefined);
+    },
+ 
     // method to initiate a connection to the central server, returns a deferred response
     connect: function() {
       // create a deferred response
@@ -59,11 +64,11 @@ angular.module('starter.services', [])
          // we're already good
          defer.resolve();
          // return the promise
-         return defer.promise();
+         return defer.promise;
       }
       console.log('connecting to ' + websocketUrl);
       // setup HTTP authentication
-      var credential = Credentials.get();
+      var credential = CredentialsService.get();
       // create the connection url
       var connectUrl = websocketUrl + '?device=' + credential.id + '&serialnumber=' + credential.serialnumber;
       try {
@@ -72,6 +77,9 @@ angular.module('starter.services', [])
         // connect
         client.connect({}, function() {
           console.log('connected');
+          // send the registration message
+          var registration = {"type": "test", "version": "1.0"};
+          client.send("/registration", null, JSON.stringify(registration));
           // send back success
           defer.resolve();
         }, function(error) {
@@ -122,7 +130,7 @@ angular.module('starter.services', [])
 /**
  * A service to query device information
  */
-.factory('Device', function(Restangular, Credentials, restUrl, $q, $http) {
+.factory('DeviceService', function(Restangular, CredentialsService, restUrl, $q, $http) {
  
   // set the URL for the REST library 
   Restangular.setBaseUrl(restUrl);
@@ -132,7 +140,7 @@ angular.module('starter.services', [])
       // create a deferred response
       var defer = $q.defer();
       // setup HTTP authentication
-      var credential = Credentials.get();
+      var credential = CredentialsService.get();
       var encoded = Base64.encode(credential.id + ':' + credential.serialnumber);
       $http.defaults.headers.common.Authorization = 'Basic ' + encoded;
       // do a REST call  
@@ -154,7 +162,7 @@ angular.module('starter.services', [])
       // create a deferred response
       var defer = $q.defer();
       // setup HTTP authentication
-      var credential = Credentials.get();
+      var credential = CredentialsService.get();
       var encoded = Base64.encode(credential.id + ':' + credential.serialnumber);
       $http.defaults.headers.common.Authorization = 'Basic ' + encoded;
       // do a REST call

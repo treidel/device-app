@@ -2,15 +2,17 @@
   <ion-content class="padding">
     <div class="container">
       <div class="row">
-        <div class="col-md-4">
+        <div class="col">
+          <h4>Where You Used Power in the Past Hour</h4>
           <pie-chart data="dataDaily" options="optionsDaily"></pie-chart>
         </div> 
-        <div class="col-md-4">
+        <div class="col">
+          <h4>The Last 24 Hours</h4>
           <rickshaw rickshaw-options="optionsHourly" rickshaw-features="featuresHourly" rickshaw-series="seriesHourly"></rickshaw>
         </div>
       </div>
       <div class="row">
-        <div class="col-md-4">
+        <div class="col">
           <h4>Live Data</h4>
            <rickshaw rickshaw-options="optionsLive" rickshaw-features="featuresLive" rickshaw-series="seriesLive"></rickshaw> 
 	</div>

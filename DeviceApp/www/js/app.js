@@ -20,6 +20,17 @@ var app = angular.module('starter', ['ionic', 'starter.controllers', 'starter.se
     }
   });
 })
+// insert filter to redirect to login page when not connected
+.run(function ($http, $rootScope, $location, $state, ConnectionService) {
+  $rootScope.$on('$stateChangeStart', function (event, next, current) {
+    if(next.name.indexOf('login') == -1 ) {
+      if (!ConnectionService.isConnected()) {
+        event.preventDefault();
+        $state.go('login');
+      }
+    }
+  });
+})
 
 .config(function($stateProvider, $urlRouterProvider) {
 
@@ -39,7 +50,12 @@ var app = angular.module('starter', ['ionic', 'starter.controllers', 'starter.se
     .state('tab', {
       url: "/tab",
       abstract: true,
-      templateUrl: "templates/tabs.html"
+      templateUrl: "templates/tabs.html",
+      resolve: {
+          device: function(DeviceService) {
+            return DeviceService.device();
+          }
+      }
     })
 
     // Each tab has its own nav history stack:
