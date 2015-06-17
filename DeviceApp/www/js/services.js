@@ -146,8 +146,18 @@ angular.module('starter.services', [])
       // do a REST call  
       Restangular.one('device').get().then(function(response) {
         console.log('queried device', response);
+        // extract the device
+        var device = response.device;
+        // setup a lookup table to map circuit names to a constant index
+        deviceLookup = {};
+        // initialize lookup table
+        for (var circuit = 0; circuit < device.circuits.length; circuit++) {
+          deviceLookup[device.circuits[circuit].name] = circuit;
+        }
+        // add the lookup to the device
+        device.lookup = deviceLookup;
         // send back success
-        defer.resolve(response.device);
+        defer.resolve(device);
       }, function(response) {
         console.log('error querying device', response);
         // tell them it failed

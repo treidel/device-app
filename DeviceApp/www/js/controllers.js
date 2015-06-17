@@ -46,14 +46,7 @@ angular.module('starter.controllers', [])
 
 .controller('DashCtrl', function($scope, $state, $ionicLoading, device, DeviceService, ConnectionService) {
 
-  // setup a lookup table to map circuit names to a constant index
-  $scope.deviceLookup = {};
-  // initialize lookup table
-  for (var circuit = 0; circuit < device.circuits.length; circuit++) {
-    $scope.deviceLookup[device.circuits[circuit].name] = circuit;
-  }
-  
-  // initiaize chart data 
+  // prepare the live chart 
   $scope.optionsLive = {renderer: 'area'};
   $scope.featuresLive = {
     palette: 'colorwheel',
@@ -67,26 +60,35 @@ angular.module('starter.controllers', [])
       watchAllSeries: true
     }
   };
-  var paletteLive = new Rickshaw.Color.Palette();
   $scope.seriesLive = [];
   for(var circuit in device.circuits) { 
     $scope.seriesLive[circuit] = {
       name : device.circuits[circuit].name, 
-      color: paletteLive.color(),
-      data : []
+      data : [{x : 143408800, y: 100000}, {x : 14308500, y: 2000000}]
     };
   }
-  $scope.optionsHourly = {renderer: 'bar'};
-  $scope.featuresHourly = {};
-  $scope.seriesHourly = [{
-                        name: 'Series 1',
-                        color: 'steelblue',
-                        data: [{x: 0, y: 23}, {x: 1, y: 15}, {x: 2, y: 79}, {x: 3, y: 31}, {x: 4, y: 60}]
-                    }, {
-                        name: 'Series 2',
-                        color: 'lightblue',
-                        data: [{x: 0, y: 30}, {x: 1, y: 20}, {x: 2, y: 64}, {x: 3, y: 50}, {x: 4, y: 15}]
-                    }];
+ 
+  // prepare the hourly chart 
+  $scope.optionsHourly = {renderer: 'line'};
+  $scope.featuresHourly = {
+    palette: 'colorwheel',
+    xAxis: {
+      timeUnit: true
+    },
+    yAxis: {
+      tickFormat: 'formatKMBT'
+    },
+    directive: {
+      watchAllSeries: true
+    }
+  };
+  $scope.seriesHourly = [];
+  for(var circuit in device.circuits) { 
+    $scope.seriesHourly[circuit] = {
+      name : device.circuits[circuit].name, 
+      data : [{x : 143408800, y: 100000}, {x : 14308500, y: 2000000}]
+    };
+  }
 
   $scope.dataDaily = [
     {label: "one", value: 12.2, color: "red"}, 
@@ -105,18 +107,22 @@ angular.module('starter.controllers', [])
       for (var j = 0; j < data.length; j++) {
       // parse the date
         var timestamp = Date.parse(data[j].record.date) / 1000;
-        console.log('timestamp', timestamp);
         // get the measurements
         measurements = data[j].record.measurements;
         // fill in an entry for each circuit
         for (var i = 0; i < measurements.length; i++) {
           // map the circuit 
-          var index = lookup[measurements[i].circuit];
+          var index = device.lookup[measurements[i].circuit];
           // extract the value
           var value = measurements[i]["power-in-kwh"];
-          console.log('populating data', index, j, timestamp, value);
+          // fill in the data
+          $scope.seriesHourly[i].data[j] = { 
+            x: timestamp, 
+            y: value
+          }
         }
       }
+      console.log(JSON.stringify($scope.seriesHourly));
       console.log('finished populating chart');
     });
   };
